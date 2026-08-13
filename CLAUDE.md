@@ -50,6 +50,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **只改 `QUADRANT_LABEL` 常數與另外三處直接寫死中文編號的地方，不動內部鍵值**：`Q1`/`Q2`/`Q3`/`Q4` 這組英文鍵、對應的 `--q1`~`--q4` 顏色變數、`QUADRANT_URGENCY`／`PRIORITY_ACTION`／洞察文字等所有依鍵值運作的下游程式碼完全不用改，因為它們都是靠 `QUADRANT_LABEL[item.quadrant]` 這種方式間接取得顯示文字，改常數就全部自動生效。**額外手動修的 3 處**（沒有透過 `QUADRANT_LABEL` 常數、直接寫死中文字串）：③ IPA 矩陣分頁圖表下方的圖例、「改善優先序（IPA 象限＋落差排序）」卡片裡的說明文字（原本寫「優先處理第二象限...其次為第三象限」現在對應到的實際語意不變但編號要改成「優先處理第一象限...其次為第四象限」）、匯出報告裡的象限統計文字。已用 Chrome 驗證 `QUADRANT_LABEL` 常數與畫面圖例文字皆正確對調。
 
+**顯示順序也改成依數字排序（同一天內緊接著的第二次調整）**：圖例與匯出報告的象限統計文字，原本是照內部鍵值順序 Q1→Q2→Q3→Q4 排列（重新編號後畫面上就變成「第二／第一／第四／第三」這種不照順序的排法），改成直接按數字順序寫死成「第一象限(Q2)／第二象限(Q1)／第三象限(Q4)／第四象限(Q3)」——這兩處都只有 4 個固定項目，用寫死順序最簡單可靠，沒有另外寫排序函式。若之後象限編號規則又要調整，記得這兩處的項目順序要跟著手動重排，不會自動跟著 `QUADRANT_LABEL` 改變而重新排序。已用 Chrome 驗證圖例確實依「第一／第二／第三／第四」順序顯示。
+
 ## Kano／Better-Worse 係數象限圖：座標軸範圍可調整（僅「進階版」，2026-08-13）
 
 比照「③ IPA 矩陣」既有的「座標軸範圍設定」UI 與資料結構（`ipaAxisRange`），「④ Kano 分析」的 Better-Worse 係數象限圖新增同款控制項：`let bwAxisRange = { xMin:0, xMax:1, yMin:0, yMax:1 }`，橫軸＝Better(SI)、縱軸＝Worse(DI)，輸入框 `step="0.05"`（IPA 是 `0.5`，因為 SI/DI 數值範圍是 0～1 的小數，量表分數是 0～10）。「套用」／「重設為 0～1」按鈕邏輯與 IPA 一致，UI 元件 id 前綴 `bw`（`bwXMin`/`bwXMax`/`bwYMin`/`bwYMax`/`btnApplyBWAxisRange`/`btnResetBWAxisRange`/`bwAxisMsg`）。`drawKanoBWChart()` 與匯出報告用的離屏渲染 `captureBWChartImage()` 都改讀 `bwAxisRange`（原本兩處都寫死 `min:0,max:1`）。

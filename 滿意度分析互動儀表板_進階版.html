@@ -1619,10 +1619,10 @@ function renderIPATab() {
 
     <div class="chart-wrap"><canvas id="ipaChart"></canvas></div>
     <div class="legend">
-      <span><i style="background:var(--q1)"></i>第二象限．優勢保持區（${counts.Q1}）</span>
       <span><i style="background:var(--q2)"></i>第一象限．集中改善區（${counts.Q2}）</span>
-      <span><i style="background:var(--q3)"></i>第四象限．次要改善區（${counts.Q3}）</span>
+      <span><i style="background:var(--q1)"></i>第二象限．優勢保持區（${counts.Q1}）</span>
       <span><i style="background:var(--q4)"></i>第三象限．過度供給區（${counts.Q4}）</span>
+      <span><i style="background:var(--q3)"></i>第四象限．次要改善區（${counts.Q3}）</span>
     </div>
     <div id="ipaDetail"></div>
   </div>
@@ -2799,7 +2799,7 @@ function reportIPASection() {
     </div>
     <p>十字線位置：表現度 ${fmt2(c.x)}、重要度 ${fmt2(c.y)}（${ipaCenterMode==='mean'?'總平均':ipaCenterMode==='mid'?'量表中點':'自訂'}）。</p>
     ${img ? `<img src="${img}" alt="IPA 矩陣圖">` : ""}
-    <p>第二象限（優勢保持區）${counts.Q1} 項；第一象限（集中改善區）${counts.Q2} 項；第四象限（次要改善區）${counts.Q3} 項；第三象限（過度供給區）${counts.Q4} 項。</p>
+    <p>第一象限（集中改善區）${counts.Q2} 項；第二象限（優勢保持區）${counts.Q1} 項；第三象限（過度供給區）${counts.Q4} 項；第四象限（次要改善區）${counts.Q3} 項。</p>
     <table><thead><tr><th>題項</th><th>重要度均分</th><th>表現度均分</th><th>落差</th><th>象限</th></tr></thead><tbody>
       ${STATE.items.map(i => `<tr><td>${escapeHtml(i.item)}</td><td>${fmt1(i.impMean)}</td><td>${fmt1(i.perfMean)}</td><td>${fmt1(gapOf(i))}</td><td>${i.quadrant?QUADRANT_LABEL[i.quadrant]:"—"}</td></tr>`).join("")}
     </tbody></table>
