@@ -621,7 +621,10 @@ let bwAxisRange = { xMin: 0, xMax: 1, yMin: 0, yMax: 1 };
 let ipaShowLabels = true;
 let ipaBubbleBySample = false;
 
-const QUADRANT_LABEL = { Q1:"第一象限．優勢保持區", Q2:"第二象限．集中改善區", Q3:"第三象限．次要改善區", Q4:"第四象限．過度供給區" };
+// 象限編號於 2026-08-13 應使用者要求重新編排（以新的「第一象限」為起點順時針編號）：
+// 原 Q2(集中改善區)→第一象限、原 Q1(優勢保持區)→第二象限、原 Q4(過度供給區)→第三象限、原 Q3(次要改善區)→第四象限
+// 底下的 Q1/Q2/Q3/Q4 這組英文鍵值本身（含對應顏色 --q1~--q4）維持不變，只有顯示用的「第X象限」數字文字調整
+const QUADRANT_LABEL = { Q1:"第二象限．優勢保持區", Q2:"第一象限．集中改善區", Q3:"第四象限．次要改善區", Q4:"第三象限．過度供給區" };
 const QUADRANT_COLOR = { Q1:"var(--q1)", Q2:"var(--q2)", Q3:"var(--q3)", Q4:"var(--q4)" };
 const QUADRANT_COLOR_HEX = { Q1:"#30D158", Q2:"#FF3B30", Q3:"#8E8E93", Q4:"#AF52DE" };
 const ATTR_LABEL = { M:"必須品質 M", O:"一維品質 O", A:"魅力品質 A", I:"無差異品質 I", R:"反向品質 R", Q:"可疑結果 Q" };
@@ -1616,10 +1619,10 @@ function renderIPATab() {
 
     <div class="chart-wrap"><canvas id="ipaChart"></canvas></div>
     <div class="legend">
-      <span><i style="background:var(--q1)"></i>第一象限．優勢保持區（${counts.Q1}）</span>
-      <span><i style="background:var(--q2)"></i>第二象限．集中改善區（${counts.Q2}）</span>
-      <span><i style="background:var(--q3)"></i>第三象限．次要改善區（${counts.Q3}）</span>
-      <span><i style="background:var(--q4)"></i>第四象限．過度供給區（${counts.Q4}）</span>
+      <span><i style="background:var(--q1)"></i>第二象限．優勢保持區（${counts.Q1}）</span>
+      <span><i style="background:var(--q2)"></i>第一象限．集中改善區（${counts.Q2}）</span>
+      <span><i style="background:var(--q3)"></i>第四象限．次要改善區（${counts.Q3}）</span>
+      <span><i style="background:var(--q4)"></i>第三象限．過度供給區（${counts.Q4}）</span>
     </div>
     <div id="ipaDetail"></div>
   </div>
@@ -2127,7 +2130,7 @@ function renderPriorityTab() {
         <button class="btn secondary small" id="btnPriorityCsv">⬇ CSV</button>
       </div>
       <div class="msg info">
-        此份資料未包含 Kano 正反題，無法計算完整的 IPA × Kano 五級優先度。系統改以「IPA 象限」搭配「重要度－表現度落差」自動排序：優先處理第二象限（高重要、低表現）題項，其次為第三象限，落差越大代表改善空間越大。
+        此份資料未包含 Kano 正反題，無法計算完整的 IPA × Kano 五級優先度。系統改以「IPA 象限」搭配「重要度－表現度落差」自動排序：優先處理第一象限（高重要、低表現）題項，其次為第四象限，落差越大代表改善空間越大。
       </div>
       <div class="table-wrap" style="margin-top:14px;">
         <table>
@@ -2796,7 +2799,7 @@ function reportIPASection() {
     </div>
     <p>十字線位置：表現度 ${fmt2(c.x)}、重要度 ${fmt2(c.y)}（${ipaCenterMode==='mean'?'總平均':ipaCenterMode==='mid'?'量表中點':'自訂'}）。</p>
     ${img ? `<img src="${img}" alt="IPA 矩陣圖">` : ""}
-    <p>第一象限（優勢保持區）${counts.Q1} 項；第二象限（集中改善區）${counts.Q2} 項；第三象限（次要改善區）${counts.Q3} 項；第四象限（過度供給區）${counts.Q4} 項。</p>
+    <p>第二象限（優勢保持區）${counts.Q1} 項；第一象限（集中改善區）${counts.Q2} 項；第四象限（次要改善區）${counts.Q3} 項；第三象限（過度供給區）${counts.Q4} 項。</p>
     <table><thead><tr><th>題項</th><th>重要度均分</th><th>表現度均分</th><th>落差</th><th>象限</th></tr></thead><tbody>
       ${STATE.items.map(i => `<tr><td>${escapeHtml(i.item)}</td><td>${fmt1(i.impMean)}</td><td>${fmt1(i.perfMean)}</td><td>${fmt1(gapOf(i))}</td><td>${i.quadrant?QUADRANT_LABEL[i.quadrant]:"—"}</td></tr>`).join("")}
     </tbody></table>

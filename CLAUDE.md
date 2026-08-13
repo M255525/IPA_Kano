@@ -37,6 +37,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **沒有改的部分**：`ipaAxisRange` 這個 state 物件本身的欄位名稱（`xMin`/`xMax`/`yMin`/`yMax`）維持不變，只是現在 `xMin`/`xMax` 代表的是表現度範圍、`yMin`/`yMax` 代表重要度範圍——因為預設值兩者都是 0～10，數值不用改，只有畫面上的標籤文字要跟著改，避免不必要的變數改名徒增風險。CSV 匯出（`IPA象限一覽表.csv`）、題項象限一覽表、報告裡的資料表格全部不受影響，因為那些都是欄位獨立的表格（重要度均分／表現度均分各自一欄），不是畫在 x/y 座標上的圖表。
 - 已用 Chrome 自動化驗證：座標軸標題正確對調、已知為 Q1（兩者皆高）與 Q2（重要度高表現度低）的題項在圖表資料點座標與象限分類都正確對應。
 
+## IPA 矩陣：象限編號重新編排（僅「進階版」，2026-08-13）
+
+緊接著上面「橫軸與縱軸對調」之後，使用者再要求把「第X象限」這組**顯示數字**重新編排（跟畫面上的視覺位置無關，純粹是編號規則）：以新的「第一象限」為起點，順時針編號。對照表：
+
+| 內部鍵值（不變） | 描述性名稱（不變） | 舊編號 | 新編號 |
+|---|---|---|---|
+| Q1 | 優勢保持區 | 第一象限 | **第二象限** |
+| Q2 | 集中改善區 | 第二象限 | **第一象限** |
+| Q3 | 次要改善區 | 第三象限 | **第四象限** |
+| Q4 | 過度供給區 | 第四象限 | **第三象限** |
+
+**只改 `QUADRANT_LABEL` 常數與另外三處直接寫死中文編號的地方，不動內部鍵值**：`Q1`/`Q2`/`Q3`/`Q4` 這組英文鍵、對應的 `--q1`~`--q4` 顏色變數、`QUADRANT_URGENCY`／`PRIORITY_ACTION`／洞察文字等所有依鍵值運作的下游程式碼完全不用改，因為它們都是靠 `QUADRANT_LABEL[item.quadrant]` 這種方式間接取得顯示文字，改常數就全部自動生效。**額外手動修的 3 處**（沒有透過 `QUADRANT_LABEL` 常數、直接寫死中文字串）：③ IPA 矩陣分頁圖表下方的圖例、「改善優先序（IPA 象限＋落差排序）」卡片裡的說明文字（原本寫「優先處理第二象限...其次為第三象限」現在對應到的實際語意不變但編號要改成「優先處理第一象限...其次為第四象限」）、匯出報告裡的象限統計文字。已用 Chrome 驗證 `QUADRANT_LABEL` 常數與畫面圖例文字皆正確對調。
+
 ## Kano／Better-Worse 係數象限圖：座標軸範圍可調整（僅「進階版」，2026-08-13）
 
 比照「③ IPA 矩陣」既有的「座標軸範圍設定」UI 與資料結構（`ipaAxisRange`），「④ Kano 分析」的 Better-Worse 係數象限圖新增同款控制項：`let bwAxisRange = { xMin:0, xMax:1, yMin:0, yMax:1 }`，橫軸＝Better(SI)、縱軸＝Worse(DI)，輸入框 `step="0.05"`（IPA 是 `0.5`，因為 SI/DI 數值範圍是 0～1 的小數，量表分數是 0～10）。「套用」／「重設為 0～1」按鈕邏輯與 IPA 一致，UI 元件 id 前綴 `bw`（`bwXMin`/`bwXMax`/`bwYMin`/`bwYMax`/`btnApplyBWAxisRange`/`btnResetBWAxisRange`/`bwAxisMsg`）。`drawKanoBWChart()` 與匯出報告用的離屏渲染 `captureBWChartImage()` 都改讀 `bwAxisRange`（原本兩處都寫死 `min:0,max:1`）。
