@@ -60,6 +60,10 @@ python scripts/build_dashboard.py scripts/dashboard-src 輸出檔名.html
   - **剩餘天數持續顯示（2026-08-13 補上）**：原本「剩餘 N 天可用」只出現在驗證通過那一瞬間的 `#gateStatus`，遮罩一隱藏（`.hidden`）整段文字就跟著消失，使用者解鎖後完全看不到還剩幾天。改法：header 的 `.header-actions` 新增常駐徽章 `#licenseBadge`（🔑 剩餘 N 天，hover 顯示到期日），`unlock()` 時同步寫入、`lock()`（含每 20 分鐘背景重驗失敗時）隱藏；剩餘 ≤7 天時徽章變色（`.license-badge.warn`，沿用 `--warn-bg`/`--warn-fg`）。做法比照 `icap_s`／`sbir-gen-s` 那種「只鎖單一功能」模式裡本來就有的常駐 `#licenseStatus` 徽章，但那邊是徽章跟被鎖功能長在一起、不會被隱藏；本專案是「鎖整個工具」模式，遮罩本身會消失，所以徽章要另外搬到頁面 chrome（header）才會持續可見。已用 Chrome 自動化驗證解鎖後徽章正確顯示「🔑 剩餘 505 天」與到期日 tooltip。
   - **修改 `滿意度分析互動儀表板_進階版.html` 後，`dashboard-exe/IPAKanoDashboard.exe` 需依 CLAUDE.md 最上方的 PyInstaller 指令重建才會吃到最新版**（尚未重建——2026-08-13 兩次重建都異常卡死在近乎零 CPU 狀態，不像單純的 SAC 信譽查核慢，疑似當時機器有其他狀況造成資源排擠，已中止並清理殘留程序，待稍後重試）。
 
+## GitHub
+
+公開 repo：<https://github.com/M255525/IPA_Kano>（2026-08-13 建立並推送）。無 GitHub Pages（本專案是技能散布包，不是需要線上預覽的獨立網站；要在本機使用直接開 `滿意度分析互動儀表板_進階版.html` 或跑桌面版 exe）。
+
 ## 已知限制
 
 - Kano 分析需問卷同時具「正向題」與「反向題」；只有重要度／表現度的問卷只能做 IPA（會自動偵測並提示）。
