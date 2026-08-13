@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPA×Kano 滿意度分析 — ipa-skill 散布包</title>
+<style>
+:root{
+  --primary:#0071E3;
+  --bg:#F5F5F7;
+  --card:#FFFFFF;
+  --border:rgba(0,0,0,.08);
+  --text:#1D1D1F;
+  --muted:#86868B;
+  --chip:#EDEDF0;
+  --radius:18px;
+  --shadow:0 2px 20px rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#161617; --card:#1D1D1F; --border:rgba(255,255,255,.12);
+    --text:#F5F5F7; --muted:#98989D; --chip:#3A3A3C;
+    --shadow:0 2px 20px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.05);
+  }
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; padding:40px 20px 60px;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","PingFang TC","Microsoft JhengHei",sans-serif;
+  background:var(--bg); color:var(--text); line-height:1.6;
+}
+main{max-width:720px;margin:0 auto;}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--primary);text-transform:uppercase;}
+h1{font-size:28px;font-weight:700;margin:8px 0 6px;}
+.lead{color:var(--muted);font-size:15px;margin:0 0 32px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:18px;}
+.card h2{font-size:16px;margin:0 0 6px;}
+.card p{color:var(--muted);font-size:13.5px;margin:0 0 14px;}
+.btn{
+  display:inline-block;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;
+  text-decoration:none;border:1px solid var(--border);color:var(--text);background:var(--chip);
+  transition:opacity .15s;
+}
+.btn:hover{opacity:.8;}
+.btn.primary{background:var(--primary);color:#fff;border-color:var(--primary);}
+.links{display:flex;flex-wrap:wrap;gap:10px;}
+.badge{display:inline-block;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--chip);color:var(--muted);margin-bottom:14px;}
+footer{margin-top:32px;color:var(--muted);font-size:12px;text-align:center;}
+footer a{color:var(--muted);}
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">IPA × KANO × BETTER-WORSE × PARETO</div>
+  <h1>產品／服務滿意度分析</h1>
+  <p class="lead">把問卷調查資料轉換成有科學依據的改善優先序——重要度—表現度矩陣（IPA）＋ Kano 品質屬性模型 ＋ 柏拉圖 80/20 分析。這是 <code>ipa-skill</code> 的散布包與交付物範例。</p>
+
+  <div class="card">
+    <span class="badge">🔒 需輸入授權序號</span>
+    <h2>互動式儀表板（進階版）</h2>
+    <p>資料匯入 / 總覽洞察 / IPA 矩陣 / Kano 分析 / 整合優先序 / 柏拉圖 / 補充意見 / 匯出報告，八個分頁的完整分析工具。全部運算預設於瀏覽器本機執行，資料不上傳；可重複上傳新批資料重算，適合定期追蹤。</p>
+    <div class="links">
+      <a class="btn primary" href="滿意度分析互動儀表板_進階版.html">開啟互動式儀表板 →</a>
+      <a class="btn" href="manual.html">操作手冊</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Claude 技能檔（ipa-skill）</h2>
+    <p>打包好的 Claude 技能，可在 Claude 設定 → Capabilities 上傳安裝，透過對話產生完整的計畫書與儀表板交付物。</p>
+    <div class="links">
+      <a class="btn" href="ipa-skill.skill">下載 ipa-skill.skill</a>
+      <a class="btn" href="ipa-skill-README.md">技能說明文件</a>
+      <a class="btn" href="ipa-skill-eval-review.html">技能評測報告</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>範例交付物</h2>
+    <p>展示 <code>ipa-skill</code> 產出的另一種交付物格式——含方法論與執行計畫的 Word 計畫書（相容 Word 的 HTML 內嵌 .doc）。</p>
+    <div class="links">
+      <a class="btn" href="產品服務滿意度問卷分析計畫書_v2.docx">下載範例計畫書 (.doc)</a>
+    </div>
+  </div>
+
+  <footer>
+    僅供教學與個人使用，禁止未經授權公開發布、販售或商業化使用。<br>
+    <a href="https://github.com/M255525/IPA_Kano">GitHub 原始碼</a>
+  </footer>
+</main>
+</body>
+</html>
