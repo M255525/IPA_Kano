@@ -60,9 +60,15 @@ python scripts/build_dashboard.py scripts/dashboard-src 輸出檔名.html
   - **剩餘天數持續顯示（2026-08-13 補上）**：原本「剩餘 N 天可用」只出現在驗證通過那一瞬間的 `#gateStatus`，遮罩一隱藏（`.hidden`）整段文字就跟著消失，使用者解鎖後完全看不到還剩幾天。改法：header 的 `.header-actions` 新增常駐徽章 `#licenseBadge`（🔑 剩餘 N 天，hover 顯示到期日），`unlock()` 時同步寫入、`lock()`（含每 20 分鐘背景重驗失敗時）隱藏；剩餘 ≤7 天時徽章變色（`.license-badge.warn`，沿用 `--warn-bg`/`--warn-fg`）。做法比照 `icap_s`／`sbir-gen-s` 那種「只鎖單一功能」模式裡本來就有的常駐 `#licenseStatus` 徽章，但那邊是徽章跟被鎖功能長在一起、不會被隱藏；本專案是「鎖整個工具」模式，遮罩本身會消失，所以徽章要另外搬到頁面 chrome（header）才會持續可見。已用 Chrome 自動化驗證解鎖後徽章正確顯示「🔑 剩餘 505 天」與到期日 tooltip。
   - **修改 `滿意度分析互動儀表板_進階版.html` 後，`dashboard-exe/IPAKanoDashboard.exe` 需依 CLAUDE.md 最上方的 PyInstaller 指令重建才會吃到最新版**（尚未重建——2026-08-13 兩次重建都異常卡死在近乎零 CPU 狀態，不像單純的 SAC 信譽查核慢，疑似當時機器有其他狀況造成資源排擠，已中止並清理殘留程序，待稍後重試）。
 
-## GitHub
+## GitHub 與線上部署
 
-公開 repo：<https://github.com/M255525/IPA_Kano>（2026-08-13 建立並推送）。無 GitHub Pages（本專案是技能散布包，不是需要線上預覽的獨立網站；要在本機使用直接開 `滿意度分析互動儀表板_進階版.html` 或跑桌面版 exe）。
+公開 repo：<https://github.com/M255525/IPA_Kano>（2026-08-13 建立並推送）。`README.md` 是給 GitHub repo 首頁看的說明文件，與 `CLAUDE.md`（給 Claude Code 的開發筆記）分工不同，兩者都要在功能變動時同步更新。
+
+已啟用 GitHub Pages（`gh api repos/.../pages -X POST -f build_type=workflow`，`.github/workflows/deploy-pages.yml` 標準 Actions 部署，比照 `ai-image-prompt-studio`／`ai-music-prompt-studio` 的模式，不用 legacy branch-source）。線上網址：<https://m255525.github.io/IPA_Kano/>。
+
+`index.html` 是 Pages 根目錄的入口頁（本專案原本沒有 `index.html`，主程式檔名是中文的 `滿意度分析互動儀表板_進階版.html`，不適合直接當 Pages 預設首頁），彙整連到互動式儀表板、`manual.html`、`ipa-skill.skill`／`ipa-skill-README.md`／`ipa-skill-eval-review.html`、範例計畫書 docx——這是散布包性質使然（多個交付物範例並存，不是單一 app），跟其他姊妹專案「index.html 本身就是唯一的主程式」不同，改動或新增交付物時記得同步更新 `index.html` 的連結。
+
+已用 Chrome 對正式線上網址（非本機測試伺服器）端對端驗證：入口頁 → 點擊開啟儀表板 → 輸入序號解鎖 → 跑馬燈與剩餘天數徽章皆正確顯示。
 
 ## 已知限制
 
