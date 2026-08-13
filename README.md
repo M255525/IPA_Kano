@@ -2,7 +2,7 @@
 
 把問卷調查資料轉換成有科學依據的改善優先序，方法論為 **IPA（重要度—表現度矩陣）＋ Kano 品質屬性模型 ＋ 柏拉圖 80/20 分析**。這是 Claude 技能 `ipa-skill` 的散布包與交付物範例。
 
-🔗 **線上使用**：<https://m255525.github.io/IPA_Kano/>
+🔗 **線上使用**：<https://m255525.github.io/IPA_Kano/滿意度分析互動儀表板_進階版.html>
 
 ⚠️ **互動式儀表板需要授權序號才能使用**（見下方「授權序號」一節）。
 
@@ -25,7 +25,7 @@
 
 ## 怎麼用
 
-1. 開啟 <https://m255525.github.io/IPA_Kano/>，輸入授權序號
+1. 開啟 <https://m255525.github.io/IPA_Kano/滿意度分析互動儀表板_進階版.html>，輸入授權序號
 2. 上傳問卷資料（.csv／.xlsx／.xls 或 Google 試算表連結），或先點「加入示範範例資料」快速體驗
 3. 確認題項名稱對齊後按「套用並開始分析」
 4. 依序查看「總覽洞察」「IPA 矩陣」「Kano 分析」「整合優先序」「柏拉圖」「補充意見」
@@ -59,12 +59,11 @@ cd IPA_Kano
 python -m http.server 8000
 ```
 
-開啟 `http://localhost:8000`（本機測試序號閘門需先部署自己的 Apps Script 後端，見 `SETUP-授權伺服器設定.md`）。
+開啟 `http://localhost:8000/滿意度分析互動儀表板_進階版.html`（本機測試序號閘門需先部署自己的 Apps Script 後端，見 `SETUP-授權伺服器設定.md`）。
 
 ## 檔案結構
 
 ```
-index.html                          入口頁面（連到儀表板與其他交付物）
 滿意度分析互動儀表板_進階版.html      主程式（跑馬燈 + 序號閘門 + 完整分析功能）
 manual.html                         操作手冊
 Code.gs                             授權序號驗證用 Apps Script 後端原始碼
