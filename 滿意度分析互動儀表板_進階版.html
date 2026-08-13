@@ -546,11 +546,12 @@ function aggregateRows(rows) {
 
 /* 象限指派：進階版支援自訂十字線（總平均／量表中點／自訂座標） */
 function assignQuadrants(items, cx, cy) {
+  // 橫軸(cx)＝表現度、縱軸(cy)＝重要度（2026-08-13 應使用者要求對調，原本橫軸是重要度）
   for (const it of items) {
     if (it.impMean === null || it.perfMean === null || cx === null || cy === null) { it.quadrant = null; }
     else {
-      const highImp = it.impMean >= cx;
-      const highPerf = it.perfMean >= cy;
+      const highPerf = it.perfMean >= cx;
+      const highImp = it.impMean >= cy;
       it.quadrant = highImp && highPerf ? "Q1" : highImp && !highPerf ? "Q2" : !highImp && !highPerf ? "Q3" : "Q4";
     }
     it.priority = priorityFor(it.quadrant, it.finalAttr);
@@ -893,7 +894,7 @@ function suggestCanonicalLabels(rawItemStats) {
 function currentCenter() {
   if (ipaCenterMode === "mid") return { x:(ipaAxisRange.xMin+ipaAxisRange.xMax)/2, y:(ipaAxisRange.yMin+ipaAxisRange.yMax)/2 };
   if (ipaCenterMode === "custom") return { x:ipaCustomCenter.x, y:ipaCustomCenter.y };
-  return { x:STATE.grandImp, y:STATE.grandPerf };
+  return { x:STATE.grandPerf, y:STATE.grandImp };
 }
 function reassignByCenter() {
   const c = currentCenter();
@@ -1556,7 +1557,7 @@ function renderIPATab() {
     <div class="flex-between">
       <div>
         <h2>IPA 重要度—表現度矩陣</h2>
-        <p class="sub" style="margin-bottom:0;">橫軸＝重要度平均，縱軸＝表現度平均；十字線將圖分成四象限。點擊資料點可查看單一題項詳情。</p>
+        <p class="sub" style="margin-bottom:0;">橫軸＝表現度平均，縱軸＝重要度平均；十字線將圖分成四象限。點擊資料點可查看單一題項詳情。</p>
       </div>
       <button class="btn ghost small" id="btnIpaPng">🖼 下載圖檔</button>
     </div>
@@ -1575,9 +1576,9 @@ function renderIPATab() {
           <button data-cm="custom" class="${ipaCenterMode==='custom'?'on':''}">自訂</button>
         </span>
         <span id="customCenterInputs" style="display:${ipaCenterMode==='custom'?'inline-flex':'none'};gap:6px;align-items:center;">
-          <input type="number" id="ccX" value="${ipaCustomCenter.x}" step="0.5" style="width:74px;" title="重要度十字線">
+          <input type="number" id="ccX" value="${ipaCustomCenter.x}" step="0.5" style="width:74px;" title="表現度十字線">
           <span style="color:var(--muted);">×</span>
-          <input type="number" id="ccY" value="${ipaCustomCenter.y}" step="0.5" style="width:74px;" title="表現度十字線">
+          <input type="number" id="ccY" value="${ipaCustomCenter.y}" step="0.5" style="width:74px;" title="重要度十字線">
           <button class="btn small" id="btnApplyCustomCenter">套用</button>
         </span>
       </div>
@@ -1586,12 +1587,12 @@ function renderIPATab() {
         <button class="btn ghost small ${ipaBubbleBySample?'on':''}" id="btnToggleBubble">⚪ 點大小＝樣本數</button>
       </div>
     </div>
-    <div class="term-note" style="margin-top:0;">目前十字線：重要度 ${fmt2(c.x)}、表現度 ${fmt2(c.y)}（${ipaCenterMode==='mean'?'各題項平均的總平均':ipaCenterMode==='mid'?'座標軸範圍中點':'自訂座標'}）。改變十字線會同步重算象限與整合優先序。</div>
+    <div class="term-note" style="margin-top:0;">目前十字線：表現度 ${fmt2(c.x)}、重要度 ${fmt2(c.y)}（${ipaCenterMode==='mean'?'各題項平均的總平均':ipaCenterMode==='mid'?'座標軸範圍中點':'自訂座標'}）。改變十字線會同步重算象限與整合優先序。</div>
 
     <h3 style="margin-top:14px;">座標軸範圍設定</h3>
     <div class="grid-2" style="margin-bottom:8px;">
       <div>
-        <label>橫軸（重要度）範圍</label>
+        <label>橫軸（表現度）範圍</label>
         <div class="pill-row">
           <input type="number" id="ipaXMin" value="${ipaAxisRange.xMin}" step="0.5" style="width:90px;">
           <span style="color:var(--muted);">～</span>
@@ -1599,7 +1600,7 @@ function renderIPATab() {
         </div>
       </div>
       <div>
-        <label>縱軸（表現度）範圍</label>
+        <label>縱軸（重要度）範圍</label>
         <div class="pill-row">
           <input type="number" id="ipaYMin" value="${ipaAxisRange.yMin}" step="0.5" style="width:90px;">
           <span style="color:var(--muted);">～</span>
@@ -1771,11 +1772,13 @@ function drawIPAChart() {
       if (!chartArea) return;
       const xMid = Math.min(Math.max(scales.x.getPixelForValue(c.x), chartArea.left), chartArea.right);
       const yMid = Math.min(Math.max(scales.y.getPixelForValue(c.y), chartArea.top), chartArea.bottom);
+      // Q1(綠,兩者皆高)/Q3(灰,兩者皆低) 對角位置不受橫縱軸對調影響；Q2(紅,重要度高表現度低)/Q4(紫,重要度低表現度高)
+      // 因橫軸已改為表現度、縱軸改為重要度，兩者的畫面位置互換（Q2 變左上、Q4 變右下）
       const zones = [
         { color:"#30D158", x0:xMid, x1:chartArea.right, y0:chartArea.top, y1:yMid },
-        { color:"#FF3B30", x0:xMid, x1:chartArea.right, y0:yMid, y1:chartArea.bottom },
+        { color:"#FF3B30", x0:chartArea.left, x1:xMid, y0:chartArea.top, y1:yMid },
         { color:"#8E8E93", x0:chartArea.left, x1:xMid, y0:yMid, y1:chartArea.bottom },
-        { color:"#AF52DE", x0:chartArea.left, x1:xMid, y0:chartArea.top, y1:yMid },
+        { color:"#AF52DE", x0:xMid, x1:chartArea.right, y0:yMid, y1:chartArea.bottom },
       ];
       ctx.save();
       ctx.globalAlpha = isDark() ? 0.13 : 0.08;
@@ -1793,7 +1796,7 @@ function drawIPAChart() {
     data: {
       datasets: [{
         label: "題項",
-        data: points.map(i => ({ x: i.impMean, y: i.perfMean, label: i.item, ref: i })),
+        data: points.map(i => ({ x: i.perfMean, y: i.impMean, label: i.item, ref: i })),
         backgroundColor: points.map(i => QUADRANT_COLOR_HEX[i.quadrant] || "#666"),
         borderColor: isDark() ? "#1D1D1F" : "#FFFFFF",
         borderWidth: 1.5,
@@ -1811,8 +1814,8 @@ function drawIPAChart() {
         }
       },
       scales: {
-        x: { min:xMin, max:xMax, title:{ display:true, text:"重要度", color:t.tick }, grid:{ color:t.grid }, ticks:{ color:t.tick } },
-        y: { min:yMin, max:yMax, title:{ display:true, text:"表現度（滿意度）", color:t.tick }, grid:{ color:t.grid }, ticks:{ color:t.tick } },
+        x: { min:xMin, max:xMax, title:{ display:true, text:"表現度（滿意度）", color:t.tick }, grid:{ color:t.grid }, ticks:{ color:t.tick } },
+        y: { min:yMin, max:yMax, title:{ display:true, text:"重要度", color:t.tick }, grid:{ color:t.grid }, ticks:{ color:t.tick } },
       },
       plugins: {
         legend: { display:false },
@@ -1820,7 +1823,7 @@ function drawIPAChart() {
           callbacks: {
             label(ctx) {
               const d = ctx.raw;
-              const lines = [`${d.label}：重要度 ${d.x.toFixed(1)}，表現度 ${d.y.toFixed(1)}`];
+              const lines = [`${d.label}：重要度 ${(d.ref?.impMean ?? d.y).toFixed(1)}，表現度 ${(d.ref?.perfMean ?? d.x).toFixed(1)}`];
               if (d.ref) {
                 if (d.ref.quadrant) lines.push(QUADRANT_LABEL[d.ref.quadrant]);
                 if (d.ref.finalAttr) lines.push(ATTR_LABEL[d.ref.finalAttr]);
@@ -2704,13 +2707,13 @@ function captureIPAChartImage() {
   return captureChartOffscreen(canvas => new Chart(canvas, {
     type: "scatter",
     data: { datasets: [{
-      data: points.map(i => ({ x:i.impMean, y:i.perfMean })),
+      data: points.map(i => ({ x:i.perfMean, y:i.impMean })),
       backgroundColor: points.map(i => QUADRANT_COLOR_HEX[i.quadrant] || "#666"),
       pointRadius: 6,
     }]},
     options: {
       responsive:false, animation:false,
-      scales: { x:{min:ipaAxisRange.xMin,max:ipaAxisRange.xMax,title:{display:true,text:"重要度"}}, y:{min:ipaAxisRange.yMin,max:ipaAxisRange.yMax,title:{display:true,text:"表現度"}} },
+      scales: { x:{min:ipaAxisRange.xMin,max:ipaAxisRange.xMax,title:{display:true,text:"表現度"}}, y:{min:ipaAxisRange.yMin,max:ipaAxisRange.yMax,title:{display:true,text:"重要度"}} },
       plugins: { legend:{display:false} }
     }
   }));
@@ -2791,7 +2794,7 @@ function reportIPASection() {
       <div class="report-stat"><div class="num">${fmt1(STATE.grandPerf)}</div><div class="lbl">表現度總平均</div></div>
       <div class="report-stat"><div class="num">${STATE.items.length}</div><div class="lbl">分析題項數</div></div>
     </div>
-    <p>十字線位置：重要度 ${fmt2(c.x)}、表現度 ${fmt2(c.y)}（${ipaCenterMode==='mean'?'總平均':ipaCenterMode==='mid'?'量表中點':'自訂'}）。</p>
+    <p>十字線位置：表現度 ${fmt2(c.x)}、重要度 ${fmt2(c.y)}（${ipaCenterMode==='mean'?'總平均':ipaCenterMode==='mid'?'量表中點':'自訂'}）。</p>
     ${img ? `<img src="${img}" alt="IPA 矩陣圖">` : ""}
     <p>第一象限（優勢保持區）${counts.Q1} 項；第二象限（集中改善區）${counts.Q2} 項；第三象限（次要改善區）${counts.Q3} 項；第四象限（過度供給區）${counts.Q4} 項。</p>
     <table><thead><tr><th>題項</th><th>重要度均分</th><th>表現度均分</th><th>落差</th><th>象限</th></tr></thead><tbody>

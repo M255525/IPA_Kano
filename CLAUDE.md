@@ -24,6 +24,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **資料類型**欄（每個來源一列）：`<select data-type-src>`，可手動標註該來源「自動（不覆寫，預設）／僅計入 IPA／僅計入 Kano／IPA＋Kano 皆計入」，存在 `src.typeTag`。**這是有實際效果的過濾，不只是顯示標籤**：`finalizeMergedAnalysis()` 合併資料時，標「僅計入 IPA」會清空該來源每列的 `kanoFunc`/`kanoDys`，標「僅計入 Kano」會清空 `importance`/`performance`，藉此排除該來源對另一種分析的貢獻。用途：自動判斷為「長表格」的來源常常兩種欄位都對應到了，但使用者可能只想讓某一批資料計入其中一種分析。`typeTag` 會隨 `projectPayload()`／`restoreProjectPayload()` 存進與讀出專案存檔（.json），匯出報告的來源清單（`reportSourceSummary()`）也會顯示這一欄。
 - 已用 Chrome 自動化端對端驗證：載入示範資料→標「僅計入 IPA」→套用分析後 `hasKanoData` 正確變 `false`／`hasIPAData` 維持 `true`；清空按鈕正確歸零所有狀態並清掉自動存檔。
 
+## IPA 矩陣：橫軸與縱軸對調（僅「進階版」，2026-08-13）
+
+應使用者要求，「③ IPA 矩陣」的橫軸／縱軸對調：**橫軸＝表現度、縱軸＝重要度**（原本橫軸是重要度、縱軸是表現度）。改動範圍很廣，牽涉的地方都要一起改，之後再調整這個圖表務必檢查以下每一處：
+
+- `assignQuadrants(items, cx, cy)`：`cx`（橫軸門檻）現在對應表現度、`cy`（縱軸門檻）對應重要度——**Q1～Q4 的語意定義完全沒變**（Q1＝兩者皆高、Q2＝重要度高表現度低、Q3＝兩者皆低、Q4＝重要度低表現度高），只是判斷式裡 `highPerf`/`highImp` 各自比較哪個門檻值要對調，其餘引用 `QUADRANT_LABEL`／`PRIORITY_ACTION`／洞察文字等下游程式碼完全不受影響（都是依 Q1-Q4 語意標籤運作，跟畫面上哪個軸是哪個變數無關）。
+- `currentCenter()`：`mean` 模式回傳值改成 `{x:STATE.grandPerf, y:STATE.grandImp}`。
+- `drawIPAChart()` 的 `quadrantBgPlugin`：四象限背景色塊裡，Q1（綠，兩者皆高）與 Q3（灰，兩者皆低）在畫面上的位置（右上／左下）**不受橫縱軸對調影響**（因為兩個條件同時成立/不成立時，跟哪個變數在哪個軸無關）；但 Q2（紅）與 Q4（紫）因為兩個條件不同時成立，畫面位置會左右互換（Q2 從右下變左上、Q4 從左上變右下）——這是最容易漏改、改錯了色塊會跟實際資料點對不起來的地方。
+- `drawIPAChart()`／`captureIPAChartImage()`（匯出報告用離屏渲染）：資料點 `{x:i.perfMean, y:i.impMean}`、座標軸標題文字對調。
+- 圖表 tooltip：改成直接讀 `d.ref.impMean`/`d.ref.perfMean`（不再用 `d.x`/`d.y`），這樣不管以後橫縱軸再怎麼調整，文字說明都一定正確，不用每次跟著改。
+- UI 文字：分頁說明（橫軸＝...縱軸＝...）、自訂十字線兩個輸入框的 `title` 屬性、「目前十字線」顯示文字、「座標軸範圍設定」的橫軸／縱軸標籤、匯出報告裡的「十字線位置」文字，共 6 處都要對調。
+- **沒有改的部分**：`ipaAxisRange` 這個 state 物件本身的欄位名稱（`xMin`/`xMax`/`yMin`/`yMax`）維持不變，只是現在 `xMin`/`xMax` 代表的是表現度範圍、`yMin`/`yMax` 代表重要度範圍——因為預設值兩者都是 0～10，數值不用改，只有畫面上的標籤文字要跟著改，避免不必要的變數改名徒增風險。CSV 匯出（`IPA象限一覽表.csv`）、題項象限一覽表、報告裡的資料表格全部不受影響，因為那些都是欄位獨立的表格（重要度均分／表現度均分各自一欄），不是畫在 x/y 座標上的圖表。
+- 已用 Chrome 自動化驗證：座標軸標題正確對調、已知為 Q1（兩者皆高）與 Q2（重要度高表現度低）的題項在圖表資料點座標與象限分類都正確對應。
+
 ## Kano／Better-Worse 係數象限圖：座標軸範圍可調整（僅「進階版」，2026-08-13）
 
 比照「③ IPA 矩陣」既有的「座標軸範圍設定」UI 與資料結構（`ipaAxisRange`），「④ Kano 分析」的 Better-Worse 係數象限圖新增同款控制項：`let bwAxisRange = { xMin:0, xMax:1, yMin:0, yMax:1 }`，橫軸＝Better(SI)、縱軸＝Worse(DI)，輸入框 `step="0.05"`（IPA 是 `0.5`，因為 SI/DI 數值範圍是 0～1 的小數，量表分數是 0～10）。「套用」／「重設為 0～1」按鈕邏輯與 IPA 一致，UI 元件 id 前綴 `bw`（`bwXMin`/`bwXMax`/`bwYMin`/`bwYMax`/`btnApplyBWAxisRange`/`btnResetBWAxisRange`/`bwAxisMsg`）。`drawKanoBWChart()` 與匯出報告用的離屏渲染 `captureBWChartImage()` 都改讀 `bwAxisRange`（原本兩處都寫死 `min:0,max:1`）。
