@@ -64,11 +64,16 @@ python scripts/build_dashboard.py scripts/dashboard-src 輸出檔名.html
 
 公開 repo：<https://github.com/M255525/IPA_Kano>（2026-08-13 建立並推送）。`README.md` 是給 GitHub repo 首頁看的說明文件，與 `CLAUDE.md`（給 Claude Code 的開發筆記）分工不同，兩者都要在功能變動時同步更新。
 
-已啟用 GitHub Pages（`gh api repos/.../pages -X POST -f build_type=workflow`，`.github/workflows/deploy-pages.yml` 標準 Actions 部署，比照 `ai-image-prompt-studio`／`ai-music-prompt-studio` 的模式，不用 legacy branch-source）。線上網址（直接指向儀表板本身）：<https://m255525.github.io/IPA_Kano/滿意度分析互動儀表板_進階版.html>。
+已啟用 GitHub Pages（`gh api repos/.../pages -X POST -f build_type=workflow`，`.github/workflows/deploy-pages.yml` 標準 Actions 部署，比照 `ai-image-prompt-studio`／`ai-music-prompt-studio` 的模式，不用 legacy branch-source）。線上網址：<https://m255525.github.io/IPA_Kano/>（根目錄），會自動轉址到 <https://m255525.github.io/IPA_Kano/滿意度分析互動儀表板_進階版.html>（儀表板本身）。
 
-**沒有 `index.html`（2026-08-13 建立後隨即依使用者要求移除）**：原本試過做一個彙整入口頁（連到儀表板／manual／skill 檔／範例 docx），但使用者明確表示只要儀表板那個網址可用、根目錄 `https://m255525.github.io/IPA_Kano/` 不要能開——換句話說希望 Pages 根目錄沒有內容（訪問會 404），只有儀表板自己的網址是「正式對外的頁面」。**之後不要再自動加回 `index.html`**，除非使用者重新要求。`README.md` 的「線上使用」連結已改指向儀表板完整網址，不是根目錄。
+**`index.html` 的角色演變（2026-08-13 同一天內三次調整，記錄下來避免之後又繞回去）**：
+1. 一開始做了彙整入口頁（連到儀表板／manual／skill 檔／範例 docx）。
+2. 使用者接著表示只要儀表板網址可用、根目錄不要能開，於是**整個刪除** `index.html`，讓根目錄變成 404。
+3. 使用者再表示希望根目錄能自動轉址到儀表板，於是**改回一個純轉址用的極簡 `index.html`**（`<meta http-equiv="refresh">` ＋ JS `location.replace()` 雙保險，GitHub Pages 是純靜態託管、沒有伺服器端轉址機制，只能用這種前端轉址做法），不再是彙整多個連結的入口頁。
 
-已用 Chrome 對正式線上網址（非本機測試伺服器）端對端驗證過序號解鎖／跑馬燈／剩餘天數徽章皆正確顯示（驗證發生在移除 `index.html` 之前，走的是入口頁轉連過去，但儀表板本身的行為與網址不變，結論仍然有效）。
+**目前定案（之後預設維持這個狀態，除非使用者再改）**：根目錄 = 純轉址頁，唯一內容出口是儀表板本身；`README.md` 的「線上使用」連結指向根目錄（因為會自動轉過去）。
+
+已用 Chrome 對正式線上網址（非本機測試伺服器）端對端驗證過序號解鎖／跑馬燈／剩餘天數徽章皆正確顯示（驗證發生在改成純轉址版之前，走的是舊版入口頁轉連過去，但儀表板本身的行為與網址不變，結論仍然有效；純轉址版本身只是 `location.replace`，未另外重新跑一次端對端測試）。
 
 ## 已知限制
 
