@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>產品／服務滿意度分析互動儀表板（進階版）</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0071E3">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -252,6 +255,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:32px 20px 56p
   </div>
   <div class="header-actions">
     <span id="licenseBadge" class="license-badge" style="display:none;"></span>
+    <button class="theme-toggle" id="installBtn" type="button">📲 加入主畫面</button>
     <a href="manual.html" target="_blank" style="text-decoration:none;"><button class="theme-toggle" type="button">操作手冊</button></a>
     <button class="theme-toggle" id="btnTheme">🌙 深色模式</button>
   </div>
@@ -315,6 +319,40 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:32px 20px 56p
   render(loadCache());
   fetchMarquee();
   setInterval(fetchMarquee, REFRESH_MS);
+})();
+
+/* ================= PWA 加入主畫面（獨立運作，跟下方主程式邏輯無關） ================= */
+(function () {
+  'use strict';
+  var deferredPrompt = null;
+  var btn = document.getElementById('installBtn');
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+  window.addEventListener('appinstalled', function () {
+    deferredPrompt = null;
+  });
+
+  if (btn) {
+    var originalLabel = btn.textContent;
+    btn.addEventListener('click', function () {
+      if (!deferredPrompt) {
+        btn.textContent = '瀏覽器不支援，或已安裝過';
+        setTimeout(function () { btn.textContent = originalLabel; }, 2500);
+        return;
+      }
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function () { deferredPrompt = null; });
+    });
+  }
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('service-worker.js').catch(function () {});
+    });
+  }
 })();
 
 /* ================= 序號授權閘門（獨立運作，鎖定整個工具；跟下方主程式邏輯無關） ================= */

@@ -103,6 +103,10 @@ python scripts/build_dashboard.py scripts/dashboard-src 輸出檔名.html
 
 已用 Chrome 對正式線上網址（非本機測試伺服器）端對端驗證過序號解鎖／跑馬燈／剩餘天數徽章皆正確顯示（驗證發生在改成純轉址版之前，走的是舊版入口頁轉連過去，但儀表板本身的行為與網址不變，結論仍然有效；純轉址版本身只是 `location.replace`，未另外重新跑一次端對端測試）。
 
+## 加入主畫面（PWA，2026-08-14 新增）
+
+比照工作區 `expense-tracker-pwa` 的做法：`manifest.json`＋`icons/`（淺灰 `#F5F5F7` 背景、藍色 `#0071E3`「度」字圖示，對照 `--bg`／`--primary`）＋`service-worker.js`（network-first＋同源快取備援，跨網域的 Chart.js／PapaParse／xlsx CDN 一律略過不進快取，不需要每次改動升版 `CACHE_NAME`）。**manifest／SW／安裝按鈕都掛在 `滿意度分析互動儀表板_進階版.html`（實際內容頁），不是 `index.html`（純轉址 stub）**——`manifest.json` 的 `start_url` 也指向 `./滿意度分析互動儀表板_進階版.html`，從主畫面啟動會直接開到儀表板，不會經過轉址那一跳。安裝按鈕（`#installBtn`）放在 `.header-actions`（跟「操作手冊」「🌙 深色模式」同排、同 `.theme-toggle` 樣式），本工具沒有 `showToast`，安裝失敗走「暫時置換按鈕文字」的簡易 fallback。**`dashboard-exe/IPAKanoDashboard.exe` 桌面版不受影響**（桌面版本來就不透過瀏覽器安裝機制，manifest/SW 只在瀏覽器直接開啟網頁時生效）。已用 Playwright 實測 Chromium 觸發 `beforeinstallprompt`、SW 註冊成功（測試時用 devtools 對 `#licenseGate` 加 `.hidden` 繞過鎖定畫面）。
+
 ## 已知限制
 
 - Kano 分析需問卷同時具「正向題」與「反向題」；只有重要度／表現度的問卷只能做 IPA（會自動偵測並提示）。
