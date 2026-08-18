@@ -124,6 +124,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 已用 Playwright 端對端驗證：④ Kano 表格列與表頭正確顯示「6.13」「10.00」與「Better (SI×10)」；圖表 tooltip 輸出 `Better 6.13／Worse 10.00`；暫時模擬「只有 Kano 沒有 IPA」情境重新渲染⑤整合優先序分頁，確認該分支表格與表頭同樣正確顯示 ×10 數值。
 
+## 訪客次數計數器（2026-08-18）
+
+頁尾比照 `SocialPost`／`phoenix-loan-limit` 的既有做法，加了一個 `visitor-badge.laobi.icu` 的 SVG badge：`<img src="https://visitor-badge.laobi.icu/badge?page_id=m255525.ipakano">`，免金鑰免後端，純前端 `<img>` 嵌入即可，跟工作區其他已上線工具用同一個第三方服務、各自用不同的 `page_id`（本專案取 `m255525.ipakano`）區分計數。位置放在頁尾「製作：Mark Tsai」與使用警語文字中間，`<footer>` 本身已有 `no-print`，因此列印／PDF／報告匯出不會印出這個計數器徽章，不需要額外處理。已用 Playwright 對本機預覽伺服器驗證 `<img>` 確實插入且 `src` 正確。
+
 ## 開發／建置
 
 一般用法是透過已安裝的技能對話產生交付物。若要客製化儀表板，須在解包後的 skill 內編輯 `scripts/dashboard-src/`，再合併成單一 HTML：
