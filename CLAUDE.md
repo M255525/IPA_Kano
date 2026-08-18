@@ -109,6 +109,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 已用 Playwright 對本機預覽伺服器端對端驗證：載入示範資料套用分析後，`bwAxisRange` 預設為 `{0,10,0,10}`、圖表 `scales.x/y` 的 `min`/`max` 皆為 `0`/`10`、資料點座標正確等於原始 SI/DI×10（例如 `si=0.6129` 對應圖上 `x=6.129`）、tooltip callback 輸出正確顯示原始係數（`Better 0.61／Worse 1.00`，不是 6.1/10.0）、重設按鈕文字與輸入框 step 皆已同步更新。
 
+## Kano Better/Worse 數值顯示：全面改為 ×10，不只圖表（同一天內接續調整，2026-08-18）
+
+上一段「Kano Better-Worse 象限圖座標軸改為 0～10」原本刻意只改圖表座標，數據表格（④ Kano 分頁統計表、⑤ 整合優先序 Kano-only 版本、⑧ 匯出報告）維持顯示原始 0～1 係數，理由是「圖表座標軸調整跟數據表格單位是兩件事，不該混用」。但使用者接著明確要求「⑤ 整合優先序」（以及連帶 Kano 相關） 的 Better/Worse 數值也要跟圖表同步，也就是**整個工具裡任何顯示給使用者看的 Better/Worse 數字，一律都改成 ×10**，只有內部分類邏輯（M/O/A/I 判定、優先序排序比較）繼續用原始 0～1 比例，這樣才不會有些地方看到「0.61」、有些地方看到「6.1」的不一致。
+
+實作：新增共用格式化函式 `fmtBW(n)`（`滿意度分析互動儀表板_進階版.html`，緊接在 `fmt2()` 之後，約 710 行附近）：`(n*10).toFixed(2)`，取代所有原本顯示 SI/DI 的 `fmt2(...)` 呼叫。改動涵蓋的位置：
+- ④ Kano 分析分頁的「各題項 Kano 屬性票數分布」統計表與其 CSV 匯出（欄位標題同步加註「Better (SI×10)」「Worse (DI×10)」，避免使用者誤以為 SI/DI 本身的方法論定義變了）。
+- Better-Worse 象限圖的 tooltip（原本讀 `d.ref.si`/`d.ref.di` 顯示原始係數，現在一樣讀 `d.ref` 但改用 `fmtBW()`，跟軸線刻度一致）。
+- ⑤ 整合優先序分頁「Kano-only（無 IPA 資料）」版本的表格與 CSV 匯出，欄位標題同步加註「×10」。
+- 題項詳情卡（點擊圖表/表格列展開的 `detail-panel`）裡的 Better／Worse 徽章。
+- 自動洞察文字（「做好後最能提升滿意度的是...」那段）。
+- ⑧ 匯出報告的 Kano 統計表與 Kano-only 排行榜表格。
+- **沒有改的部分**：`kanoOnlyRank`／`integratedRank` 等排序比較邏輯繼續直接比較原始 `i.si`/`i.di`（`sort((a,b)=>b.si-a.si)` 這類），因為只是要找相對大小順序、乘不乘 10 結果都一樣，維持用原始值比較最單純、風險最低。
+
+已用 Playwright 端對端驗證：④ Kano 表格列與表頭正確顯示「6.13」「10.00」與「Better (SI×10)」；圖表 tooltip 輸出 `Better 6.13／Worse 10.00`；暫時模擬「只有 Kano 沒有 IPA」情境重新渲染⑤整合優先序分頁，確認該分支表格與表頭同樣正確顯示 ×10 數值。
+
 ## 開發／建置
 
 一般用法是透過已安裝的技能對話產生交付物。若要客製化儀表板，須在解包後的 skill 內編輯 `scripts/dashboard-src/`，再合併成單一 HTML：

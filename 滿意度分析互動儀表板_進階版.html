@@ -707,6 +707,8 @@ function escapeHtml(s) {
 }
 function fmt1(n) { return (n === null || n === undefined || isNaN(n)) ? "—" : n.toFixed(1); }
 function fmt2(n) { return (n === null || n === undefined || isNaN(n)) ? "—" : n.toFixed(2); }
+/* Kano Better/Worse 係數畫面上一律以 ×10 顯示（跟 Better-Worse 象限圖的 0～10 座標軸一致），內部計算與分類仍用原始 0～1 比例，僅顯示這一層做轉換 */
+function fmtBW(n) { return (n === null || n === undefined || isNaN(n)) ? "—" : (n*10).toFixed(2); }
 function badge(text, color, outline) {
   return `<span class="badge${outline?' outline':''}" style="${outline?`color:${color};`:`background:${color};`}">${escapeHtml(text)}</span>`;
 }
@@ -1542,7 +1544,7 @@ function buildInsights() {
       const topSi = [...withCoef].sort((a,b)=>b.si-a.si)[0];
       const topDi = [...withCoef].sort((a,b)=>b.di-a.di)[0];
       out.push({ tone:"info", icon:"📈", title:"Better-Worse 係數重點",
-        text:`做好後最能提升滿意度的是「${topSi.item}」（Better 係數 ${fmt2(topSi.si)}）；做不好最傷滿意度的是「${topDi.item}」（Worse 係數 ${fmt2(topDi.di)}）。` });
+        text:`做好後最能提升滿意度的是「${topSi.item}」（Better 係數 ${fmtBW(topSi.si)}）；做不好最傷滿意度的是「${topDi.item}」（Worse 係數 ${fmtBW(topDi.di)}）。` });
     }
   }
   if (items.length) {
@@ -1897,8 +1899,8 @@ function showIpaDetail(it) {
       ${it.quadrant ? badge(QUADRANT_LABEL[it.quadrant], QUADRANT_COLOR[it.quadrant]) : ""}
       ${it.finalAttr ? badge(ATTR_LABEL[it.finalAttr], ATTR_COLOR[it.finalAttr]) : ""}
       ${it.priority ? badge(PRIORITY_LABEL[it.priority], PRIORITY_COLOR[it.priority]) : ""}
-      ${it.si !== null ? badge("Better " + fmt2(it.si), "var(--a)", true) : ""}
-      ${it.di !== null ? badge("Worse " + fmt2(it.di), "var(--m)", true) : ""}
+      ${it.si !== null ? badge("Better " + fmtBW(it.si), "var(--a)", true) : ""}
+      ${it.di !== null ? badge("Worse " + fmtBW(it.di), "var(--m)", true) : ""}
     </div>
     ${voteBar}
     ${it.comments.length ? `<h4 style="margin-top:12px;">💬 補充意見（${it.comments.length} 則）</h4>` + it.comments.slice(0,5).map(cm => `<div class="comment-card">${escapeHtml(cm)}</div>`).join("") + (it.comments.length > 5 ? `<p class="sub" style="margin:4px 0 0;">僅顯示前 5 則，完整內容請至「⑦ 補充意見」。</p>` : "") : ""}
@@ -2026,7 +2028,7 @@ function renderKanoTab() {
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th>題項</th><th>M</th><th>O</th><th>A</th><th>I</th><th>R</th><th>Q</th><th>有效樣本</th><th>Better (SI)</th><th>Worse (DI)</th><th>最終歸類</th>
+          <th>題項</th><th>M</th><th>O</th><th>A</th><th>I</th><th>R</th><th>Q</th><th>有效樣本</th><th>Better (SI×10)</th><th>Worse (DI×10)</th><th>最終歸類</th>
         </tr></thead>
         <tbody id="kanoTableBody"></tbody>
       </table>
@@ -2108,13 +2110,13 @@ function initKanoTab() {
       <td>${i.votes.M}</td><td>${i.votes.O}</td><td>${i.votes.A}</td>
       <td>${i.votes.I}</td><td>${i.votes.R}</td><td>${i.votes.Q}</td>
       <td>${i.totalVotes}</td>
-      <td>${fmt2(i.si)}</td>
-      <td>${fmt2(i.di)}</td>
+      <td>${fmtBW(i.si)}</td>
+      <td>${fmtBW(i.di)}</td>
       <td>${i.finalAttr ? badge(ATTR_LABEL[i.finalAttr], ATTR_COLOR[i.finalAttr]) : "—"}</td>
     </tr>`).join("") || `<tr><td colspan="11" class="empty-state">尚無資料</td></tr>`;
   document.getElementById("btnKanoCsv").onclick = () => {
-    const rows = [["題項","M","O","A","I","R","Q","有效樣本","Better(SI)","Worse(DI)","最終歸類"]];
-    STATE.items.forEach(i => rows.push([i.item, i.votes.M, i.votes.O, i.votes.A, i.votes.I, i.votes.R, i.votes.Q, i.totalVotes, fmt2(i.si), fmt2(i.di), i.finalAttr ? ATTR_LABEL[i.finalAttr] : ""]));
+    const rows = [["題項","M","O","A","I","R","Q","有效樣本","Better(SI×10)","Worse(DI×10)","最終歸類"]];
+    STATE.items.forEach(i => rows.push([i.item, i.votes.M, i.votes.O, i.votes.A, i.votes.I, i.votes.R, i.votes.Q, i.totalVotes, fmtBW(i.si), fmtBW(i.di), i.finalAttr ? ATTR_LABEL[i.finalAttr] : ""]));
     downloadCSV("Kano屬性統計.csv", rows);
   };
   document.getElementById("btnBWPng").onclick = () => downloadChartPNG(kanoBWChart, "BetterWorse係數圖.png");
@@ -2200,7 +2202,7 @@ function drawKanoBWChart() {
           callbacks: {
             label(ctx) {
               const d = ctx.raw;
-              return [`${d.label}`, `Better ${d.ref.si.toFixed(2)}／Worse ${d.ref.di.toFixed(2)}`, d.ref.finalAttr ? `最終歸類：${ATTR_LABEL[d.ref.finalAttr]}` : ""].filter(Boolean);
+              return [`${d.label}`, `Better ${fmtBW(d.ref.si)}／Worse ${fmtBW(d.ref.di)}`, d.ref.finalAttr ? `最終歸類：${ATTR_LABEL[d.ref.finalAttr]}` : ""].filter(Boolean);
             }
           }
         }
@@ -2304,7 +2306,7 @@ function renderPriorityTab() {
       <div class="table-wrap" style="margin-top:14px;">
         <table>
           <thead><tr>
-            <th>順位</th><th>題項</th><th>Kano 屬性</th><th>Better (SI)</th><th>Worse (DI)</th><th>票數分布（M/O/A/I/R/Q）</th><th>有效樣本</th>
+            <th>順位</th><th>題項</th><th>Kano 屬性</th><th>Better (SI×10)</th><th>Worse (DI×10)</th><th>票數分布（M/O/A/I/R/Q）</th><th>有效樣本</th>
           </tr></thead>
           <tbody id="priorityTableBody"></tbody>
         </table>
@@ -2373,14 +2375,14 @@ function initPriorityTab() {
         <td>${idx+1}</td>
         <td>${escapeHtml(i.item)}</td>
         <td>${i.finalAttr ? badge(ATTR_LABEL[i.finalAttr], ATTR_COLOR[i.finalAttr]) : badge("待覆核", "var(--muted)")}</td>
-        <td>${fmt2(i.si)}</td>
-        <td>${fmt2(i.di)}</td>
+        <td>${fmtBW(i.si)}</td>
+        <td>${fmtBW(i.di)}</td>
         <td>M:${i.votes.M} O:${i.votes.O} A:${i.votes.A} I:${i.votes.I} R:${i.votes.R} Q:${i.votes.Q}</td>
         <td>${i.totalVotes}</td>
       </tr>`).join("") || `<tr><td colspan="7" class="empty-state">尚無資料</td></tr>`;
     document.getElementById("btnPriorityCsv").onclick = () => {
-      const rows = [["順位","題項","Kano屬性","Better(SI)","Worse(DI)","M","O","A","I","R","Q","有效樣本"]];
-      sorted.forEach((i,idx) => rows.push([idx+1, i.item, i.finalAttr?ATTR_LABEL[i.finalAttr]:"待覆核", fmt2(i.si), fmt2(i.di), i.votes.M, i.votes.O, i.votes.A, i.votes.I, i.votes.R, i.votes.Q, i.totalVotes]));
+      const rows = [["順位","題項","Kano屬性","Better(SI×10)","Worse(DI×10)","M","O","A","I","R","Q","有效樣本"]];
+      sorted.forEach((i,idx) => rows.push([idx+1, i.item, i.finalAttr?ATTR_LABEL[i.finalAttr]:"待覆核", fmtBW(i.si), fmtBW(i.di), i.votes.M, i.votes.O, i.votes.A, i.votes.I, i.votes.R, i.votes.Q, i.totalVotes]));
       downloadCSV("改善優先序.csv", rows);
     };
     return;
@@ -2961,8 +2963,8 @@ function reportKanoSection() {
   return `
     <h2>Kano 品質屬性分析</h2>
     ${img ? `<img src="${img}" alt="Kano 屬性票數分布圖">` : ""}
-    <table><thead><tr><th>題項</th><th>M</th><th>O</th><th>A</th><th>I</th><th>R</th><th>Q</th><th>有效樣本</th><th>Better (SI)</th><th>Worse (DI)</th><th>最終歸類</th></tr></thead><tbody>
-      ${STATE.items.map(i => `<tr><td>${escapeHtml(i.item)}</td><td>${i.votes.M}</td><td>${i.votes.O}</td><td>${i.votes.A}</td><td>${i.votes.I}</td><td>${i.votes.R}</td><td>${i.votes.Q}</td><td>${i.totalVotes}</td><td>${fmt2(i.si)}</td><td>${fmt2(i.di)}</td><td>${i.finalAttr?ATTR_LABEL[i.finalAttr]:"—"}</td></tr>`).join("")}
+    <table><thead><tr><th>題項</th><th>M</th><th>O</th><th>A</th><th>I</th><th>R</th><th>Q</th><th>有效樣本</th><th>Better (SI×10)</th><th>Worse (DI×10)</th><th>最終歸類</th></tr></thead><tbody>
+      ${STATE.items.map(i => `<tr><td>${escapeHtml(i.item)}</td><td>${i.votes.M}</td><td>${i.votes.O}</td><td>${i.votes.A}</td><td>${i.votes.I}</td><td>${i.votes.R}</td><td>${i.votes.Q}</td><td>${i.totalVotes}</td><td>${fmtBW(i.si)}</td><td>${fmtBW(i.di)}</td><td>${i.finalAttr?ATTR_LABEL[i.finalAttr]:"—"}</td></tr>`).join("")}
     </tbody></table>
     ${bwImg ? `<h2>Better-Worse 係數象限圖</h2><p>Better（橫軸）＝做好後能提升多少滿意；Worse（縱軸）＝做不好會造成多少不滿。</p><img src="${bwImg}" alt="Better-Worse 係數圖">` : ""}
   `;
@@ -2990,8 +2992,8 @@ function reportPrioritySection() {
     return `
       <h2>改善優先序（Kano 屬性排序）</h2>
       <p>此份資料未包含重要度／表現度評分，以 Kano 屬性急迫性排序（必須品質優先）。</p>
-      <table><thead><tr><th>順位</th><th>題項</th><th>Kano 屬性</th><th>Better (SI)</th><th>Worse (DI)</th><th>票數（M/O/A/I/R/Q）</th><th>有效樣本</th></tr></thead><tbody>
-        ${sorted.map((i,idx) => `<tr><td>${idx+1}</td><td>${escapeHtml(i.item)}</td><td>${i.finalAttr?ATTR_LABEL[i.finalAttr]:"待覆核"}</td><td>${fmt2(i.si)}</td><td>${fmt2(i.di)}</td><td>${i.votes.M}/${i.votes.O}/${i.votes.A}/${i.votes.I}/${i.votes.R}/${i.votes.Q}</td><td>${i.totalVotes}</td></tr>`).join("")}
+      <table><thead><tr><th>順位</th><th>題項</th><th>Kano 屬性</th><th>Better (SI×10)</th><th>Worse (DI×10)</th><th>票數（M/O/A/I/R/Q）</th><th>有效樣本</th></tr></thead><tbody>
+        ${sorted.map((i,idx) => `<tr><td>${idx+1}</td><td>${escapeHtml(i.item)}</td><td>${i.finalAttr?ATTR_LABEL[i.finalAttr]:"待覆核"}</td><td>${fmtBW(i.si)}</td><td>${fmtBW(i.di)}</td><td>${i.votes.M}/${i.votes.O}/${i.votes.A}/${i.votes.I}/${i.votes.R}/${i.votes.Q}</td><td>${i.totalVotes}</td></tr>`).join("")}
       </tbody></table>`;
   }
   return `<h2>改善優先序</h2><p>尚無足夠資料可產出優先序。</p>`;
