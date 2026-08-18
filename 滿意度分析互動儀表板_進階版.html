@@ -677,7 +677,7 @@ const STATE = {
 let ipaCenterMode = "mean";
 let ipaCustomCenter = { x: 6, y: 6 };
 let ipaAxisRange = { xMin: 0, xMax: 10, yMin: 0, yMax: 10 };
-let bwAxisRange = { xMin: 0, xMax: 1, yMin: 0, yMax: 1 };
+let bwAxisRange = { xMin: 0, xMax: 10, yMin: 0, yMax: 10 };
 let ipaShowLabels = true;
 let ipaBubbleBySample = false;
 
@@ -2037,7 +2037,7 @@ function renderKanoTab() {
     <div class="flex-between">
       <div>
         <h2 style="margin:0;">Better-Worse 係數象限圖</h2>
-        <p class="sub" style="margin:4px 0 0;">Better（橫軸）＝做好後能提升多少滿意；Worse（縱軸）＝做不好會造成多少不滿（取絕對值）。以 0.5 為分界：右上＝一維、右下＝魅力、左上＝必須、左下＝無差異。</p>
+        <p class="sub" style="margin:4px 0 0;">Better（橫軸）＝做好後能提升多少滿意；Worse（縱軸）＝做不好會造成多少不滿（取絕對值）。座標軸與 IPA 矩陣一致改為 0～10 顯示（原始 Better/Worse 係數為 0～1 的比例，圖上刻度＝係數×10），以 5（原始係數 0.5）為分界：右上＝一維、右下＝魅力、左上＝必須、左下＝無差異。</p>
       </div>
       <button class="btn ghost small" id="btnBWPng">🖼 下載圖檔</button>
     </div>
@@ -2047,23 +2047,23 @@ function renderKanoTab() {
       <div>
         <label>橫軸（Better／SI）範圍</label>
         <div class="pill-row">
-          <input type="number" id="bwXMin" value="${bwAxisRange.xMin}" step="0.05" style="width:90px;">
+          <input type="number" id="bwXMin" value="${bwAxisRange.xMin}" step="0.5" style="width:90px;">
           <span style="color:var(--muted);">～</span>
-          <input type="number" id="bwXMax" value="${bwAxisRange.xMax}" step="0.05" style="width:90px;">
+          <input type="number" id="bwXMax" value="${bwAxisRange.xMax}" step="0.5" style="width:90px;">
         </div>
       </div>
       <div>
         <label>縱軸（Worse／DI）範圍</label>
         <div class="pill-row">
-          <input type="number" id="bwYMin" value="${bwAxisRange.yMin}" step="0.05" style="width:90px;">
+          <input type="number" id="bwYMin" value="${bwAxisRange.yMin}" step="0.5" style="width:90px;">
           <span style="color:var(--muted);">～</span>
-          <input type="number" id="bwYMax" value="${bwAxisRange.yMax}" step="0.05" style="width:90px;">
+          <input type="number" id="bwYMax" value="${bwAxisRange.yMax}" step="0.5" style="width:90px;">
         </div>
       </div>
     </div>
     <div class="pill-row" style="margin-bottom:16px;">
       <button class="btn small" id="btnApplyBWAxisRange">套用</button>
-      <button class="btn ghost small" id="btnResetBWAxisRange">重設為 0～1</button>
+      <button class="btn ghost small" id="btnResetBWAxisRange">重設為 0～10</button>
     </div>
     <div id="bwAxisMsg"></div>
 
@@ -2130,7 +2130,7 @@ function initKanoTab() {
     drawKanoBWChart();
   };
   document.getElementById("btnResetBWAxisRange").onclick = () => {
-    bwAxisRange = { xMin: 0, xMax: 1, yMin: 0, yMax: 1 };
+    bwAxisRange = { xMin: 0, xMax: 10, yMin: 0, yMax: 10 };
     renderActiveTab();
   };
   document.querySelectorAll("#kanoBarSeg button").forEach(btn => {
@@ -2151,8 +2151,8 @@ function drawKanoBWChart() {
     beforeDraw(chart) {
       const { ctx, chartArea, scales } = chart;
       if (!chartArea) return;
-      const xMid = scales.x.getPixelForValue(0.5);
-      const yMid = scales.y.getPixelForValue(0.5);
+      const xMid = scales.x.getPixelForValue(5);
+      const yMid = scales.y.getPixelForValue(5);
       const zones = [
         { color:"#FF9500", x0:xMid, x1:chartArea.right, y0:chartArea.top, y1:yMid, label:"一維 O" },
         { color:"#30D158", x0:xMid, x1:chartArea.right, y0:yMid, y1:chartArea.bottom, label:"魅力 A" },
@@ -2180,7 +2180,7 @@ function drawKanoBWChart() {
     type: "scatter",
     data: {
       datasets: [{
-        data: points.map(i => ({ x:i.si, y:i.di, label:i.item, ref:i })),
+        data: points.map(i => ({ x:i.si*10, y:i.di*10, label:i.item, ref:i })),
         backgroundColor: points.map(i => ATTR_COLOR_HEX[i.finalAttr] || "#666"),
         borderColor: isDark() ? "#1D1D1F" : "#FFFFFF",
         borderWidth: 1.5,
@@ -2200,7 +2200,7 @@ function drawKanoBWChart() {
           callbacks: {
             label(ctx) {
               const d = ctx.raw;
-              return [`${d.label}`, `Better ${d.x.toFixed(2)}／Worse ${d.y.toFixed(2)}`, d.ref.finalAttr ? `最終歸類：${ATTR_LABEL[d.ref.finalAttr]}` : ""].filter(Boolean);
+              return [`${d.label}`, `Better ${d.ref.si.toFixed(2)}／Worse ${d.ref.di.toFixed(2)}`, d.ref.finalAttr ? `最終歸類：${ATTR_LABEL[d.ref.finalAttr]}` : ""].filter(Boolean);
             }
           }
         }
@@ -2887,7 +2887,7 @@ function captureBWChartImage() {
   return captureChartOffscreen(canvas => new Chart(canvas, {
     type: "scatter",
     data: { datasets: [{
-      data: points.map(i => ({ x:i.si, y:i.di })),
+      data: points.map(i => ({ x:i.si*10, y:i.di*10 })),
       backgroundColor: points.map(i => ATTR_COLOR_HEX[i.finalAttr] || "#666"),
       pointRadius: 6,
     }]},
