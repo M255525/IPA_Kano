@@ -537,7 +537,7 @@ function normalizeKanoAnswer(v) {
   const s = String(v).trim();
   if (["1","很喜歡","喜歡","非常喜歡","太棒了"].includes(s)) return "like";
   if (["2","理應如此","應該的","本來就該有","理所當然"].includes(s)) return "mustbe";
-  if (["3","無所謂","普通","沒感覺","沒差","沒意見"].includes(s)) return "neutral";
+  if (["3","無所謂","普通","沒感覺","沒有感覺","沒什麼感覺","沒差","沒意見"].includes(s)) return "neutral";
   if (["4","勉強接受","可以接受","能忍受","尚可接受"].includes(s)) return "livewith";
   if (["5","不喜歡","不滿意","無法接受","不能接受"].includes(s)) return "dislike";
   return null;
@@ -805,12 +805,12 @@ function convertWideRowsToLongRows(rawRows, pairs) {
   }
   return rows;
 }
-const POS_SUFFIX = ["非常好","很好","好","佳","棒","優","強","足夠","充足","滿意"];
-const NEG_SUFFIX = ["非常不好","很不好","不好","差","弱","不足","不佳","不滿意"];
+const POS_SUFFIX = ["非常好","很好","良好","穩定","足夠","充足","滿意","好","佳","棒","優","強","高"];
+const NEG_SUFFIX = ["非常不好","很不好","不穩定","不滿意","不好","不足","不佳","差","弱","低"];
 const NEG_WORDS = ["沒","不","無","未"];
 function stripSuffix(text, suffixList) {
   const sorted = [...suffixList].sort((a,b)=>b.length-a.length);
-  for (const suf of sorted) { if (text.endsWith(suf)) return text.slice(0, -suf.length); }
+  for (const suf of sorted) { if (text.endsWith(suf) && text.length > suf.length) return text.slice(0, -suf.length); }
   return null;
 }
 function classifyKanoHeader(h) {
@@ -822,7 +822,7 @@ function classifyKanoHeader(h) {
   if (NEG_WORDS.some(w => t.includes(w))) return { polarity:"neg", core:t };
   return { polarity:"pos", core:t };
 }
-function sampleLooksLikeKanoAnswers(headers, rawRows, colIndices, sampleSize) {
+function sampleLooksLikeKanoAnswers(rawRows, colIndices, sampleSize) {
   let checked = 0, matched = 0;
   for (const r of rawRows) {
     for (const idx of colIndices) {
@@ -841,33 +841,75 @@ function commonPrefixLen(a, b) {
   while (n < a.length && n < b.length && a[n] === b[n]) n++;
   return n;
 }
+function commonSuffixLen(a, b) {
+  let n = 0;
+  while (n < a.length && n < b.length && a[a.length-1-n] === b[b.length-1-n]) n++;
+  return n;
+}
+/* 找出候選欄位共同的前後綴模板文字（例如「如果...，您的感受是？」這種問卷平台常見包裝句），
+   拿掉之後每欄只剩「題目核心＋正/反向措辭」，不需要預先寫死模板文字本身也能適用不同問卷的用語。 */
+function stripCommonWrapper(strs) {
+  if (strs.length < 2) return { prefixLen:0, suffixLen:0 };
+  let prefixLen = strs[0].length, suffixLen = strs[0].length;
+  for (let i = 1; i < strs.length; i++) {
+    prefixLen = Math.min(prefixLen, commonPrefixLen(strs[0], strs[i]));
+    suffixLen = Math.min(suffixLen, commonSuffixLen(strs[0], strs[i]));
+  }
+  const minLen = Math.min(...strs.map(s => s.length));
+  if (prefixLen + suffixLen > minLen) suffixLen = Math.max(0, minLen - prefixLen);
+  return { prefixLen, suffixLen };
+}
 function detectKanoWideFormat(headers, rawRows) {
-  if (!headers.length || headers.length < 4 || headers.length % 2 !== 0) return [];
-  const classified = headers.map((h, idx) => Object.assign({ idx: idx }, classifyKanoHeader(h)));
+  if (!headers.length) return [];
+  // 先挑出「欄位作答內容看起來像 Kano 五點量表」的候選欄位，排除人口統計等不相干欄位混進判斷
+  const candidateIdx = [];
+  headers.forEach((h, idx) => {
+    if (!normHeader(h)) return;
+    if (sampleLooksLikeKanoAnswers(rawRows, [idx], 30)) candidateIdx.push(idx);
+  });
+  if (candidateIdx.length < 4 || candidateIdx.length % 2 !== 0) return [];
+  const { prefixLen, suffixLen } = stripCommonWrapper(candidateIdx.map(idx => normHeader(headers[idx])));
+  const stems = {};
+  candidateIdx.forEach(idx => {
+    const t = normHeader(headers[idx]);
+    const stem = t.slice(prefixLen, t.length - suffixLen);
+    stems[idx] = stem || t;
+  });
+  const classified = candidateIdx.map(idx => Object.assign({ idx }, classifyKanoHeader(stems[idx])));
   const positives = classified.filter(c => c.polarity === "pos");
   const negatives = classified.filter(c => c.polarity === "neg");
   if (positives.length === 0 || positives.length !== negatives.length) return [];
-  if (!sampleLooksLikeKanoAnswers(headers, rawRows, classified.map(function(c){return c.idx;}), 40)) return [];
-  const half = headers.length / 2;
-  const firstHalfAllPos = positives.length === half && positives.every(function(c){return c.idx < half;}) && negatives.every(function(c){return c.idx >= half;});
   const pairs = [];
-  if (firstHalfAllPos) {
-    for (let i = 0; i < half; i++) {
-      const pos = positives.find(function(c){ return c.idx === i; });
-      const neg = negatives.find(function(c){ return c.idx === i + half; });
-      pairs.push({ item: pos.core || normHeader(headers[pos.idx]), funcIdx: pos.idx, dysIdx: neg.idx });
+  const usedNeg = new Set();
+  const pairedPos = new Set();
+  // 第一輪：拆掉尾綴後兩邊核心文字完全相同，直接配對（例如「良好」／「不佳」都拆完剩下同樣的題目文字）
+  for (const pos of positives) {
+    if (!pos.core) continue;
+    const neg = negatives.find(n => !usedNeg.has(n.idx) && n.core === pos.core);
+    if (neg) { usedNeg.add(neg.idx); pairedPos.add(pos.idx); pairs.push({ item: pos.core, funcIdx: pos.idx, dysIdx: neg.idx }); }
+  }
+  // 第二輪：反向題核心文字裡插入了否定詞而非尾綴（例如「未提供ＸＸ」對「提供ＸＸ」），移除否定字後再比對一次
+  for (const neg of negatives) {
+    if (usedNeg.has(neg.idx)) continue;
+    let matchedPos = null;
+    for (const w of NEG_WORDS) {
+      if (!neg.core.includes(w)) continue;
+      const stripped = neg.core.replace(w, "");
+      matchedPos = positives.find(p => !pairedPos.has(p.idx) && p.core === stripped);
+      if (matchedPos) break;
     }
-  } else {
-    const usedNeg = new Set();
-    for (const pos of positives) {
-      let bestNeg = null, bestScore = -1;
-      for (const neg of negatives) {
-        if (usedNeg.has(neg.idx)) continue;
-        const score = commonPrefixLen(pos.core, neg.core);
-        if (score > bestScore) { bestScore = score; bestNeg = neg; }
-      }
-      if (bestNeg) { usedNeg.add(bestNeg.idx); pairs.push({ item: pos.core || normHeader(headers[pos.idx]), funcIdx: pos.idx, dysIdx: bestNeg.idx }); }
+    if (matchedPos) { usedNeg.add(neg.idx); pairedPos.add(matchedPos.idx); pairs.push({ item: matchedPos.core || neg.core, funcIdx: matchedPos.idx, dysIdx: neg.idx }); }
+  }
+  // 第三輪：仍未配到的保底處理，用核心文字最長共同前綴猜配對，避免遇到沒預期到的措辭就整批漏掉
+  for (const pos of positives) {
+    if (pairedPos.has(pos.idx)) continue;
+    let bestNeg = null, bestScore = -1;
+    for (const neg of negatives) {
+      if (usedNeg.has(neg.idx)) continue;
+      const score = commonPrefixLen(pos.core, neg.core);
+      if (score > bestScore) { bestScore = score; bestNeg = neg; }
     }
+    if (bestNeg) { usedNeg.add(bestNeg.idx); pairedPos.add(pos.idx); pairs.push({ item: pos.core || normHeader(headers[pos.idx]), funcIdx: pos.idx, dysIdx: bestNeg.idx }); }
   }
   return pairs;
 }
