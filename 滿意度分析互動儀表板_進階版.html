@@ -845,7 +845,7 @@ function convertKanoWideRowsToLongRows(rawRows, pairs) {
   return rows;
 }
 const FIELD_GUESS = {
-  item: ["題項","項目","服務項目","功能","構面","題目"],
+  item: ["題目","題項","服務項目","構面","項目","功能"],
   importance: ["重要度","重要性"],
   performance: ["表現度","滿意度","表現","滿意"],
   kanoFunc: ["kano正向","正向題","正向","功能性","功能性問題"],
@@ -853,13 +853,21 @@ const FIELD_GUESS = {
   comment: ["補充說明","補充意見","意見","備註","留言","說明"],
 };
 function guessMapping(headers) {
-  const lower = headers.map(h => String(h).toLowerCase());
+  const lower = headers.map(h => String(h).toLowerCase().trim());
   const result = {};
   for (const field of Object.keys(FIELD_GUESS)) {
     let found = null;
+    // 先找完全相符的欄名（最準確，例如欄名就叫「題目」）
     for (const kw of FIELD_GUESS[field]) {
-      const idx = lower.findIndex(h => h.includes(kw.toLowerCase()));
+      const idx = lower.findIndex(h => h === kw.toLowerCase());
       if (idx !== -1) { found = idx; break; }
+    }
+    // 找不到完全相符才退回「欄名包含關鍵字」比對，避免像「功能」這類generic字誤配到不相干欄位
+    if (found === null) {
+      for (const kw of FIELD_GUESS[field]) {
+        const idx = lower.findIndex(h => h.includes(kw.toLowerCase()));
+        if (idx !== -1) { found = idx; break; }
+      }
     }
     result[field] = found;
   }

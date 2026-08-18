@@ -68,6 +68,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Word (.doc) 匯出**：Word 的 HTML 渲染引擎對 `position:fixed/absolute` 支援不穩定，改用最相容的做法——直接在 `body{background-image:url(...)}` 設定水印，`background-position:center 400pt`、`background-size:45% auto`、不重複。**已知限制**：這種寫法在 Word 裡通常只會在文件背景出現一次（不像瀏覽器列印那樣每頁重複），這是 Word HTML 相容格式的固有限制，不是 bug；如果之後需要「Word 也要每頁都有水印」，要改用 Word 原生的頁首/頁尾水印機制，無法只靠 HTML/CSS 達成。
 - 已用 Chrome 自動化驗證：預覽區塊正確插入水印圖片、`opacity` 電腦運算後確實是 `0.08`、`pointer-events:none`、容器 `position:relative`／水印 `position:absolute`，畫面渲染時機正確（水印不會擋住點擊）；`window.print()` 實際觸發列印對話框未逐一實測（該操作會跳出系統對話框，不適合自動化測試），CSS 規則已用語法檢查與程式碼審視確認正確。
 
+## 資料匯入：長表格欄位對應自動猜測修正（2026-08-18）
+
+「①資料匯入」在系統無法自動判斷寬表格格式時，會退回「欄位對應（長表格模式）」讓使用者手動指定每個欄位對應到原始檔案的哪一欄，並用 `guessMapping()` 先幫使用者猜測一次預設值。原本的猜測邏輯有 bug：`item`（題項名稱）欄位的關鍵字清單 `["題項","項目","服務項目","功能","構面","題目"]` 把最精準的「題目」放在最後，而「功能」這個字很generic，如果檔案裡剛好有 Kano 正向題欄位叫「功能性問題」，`功能` 這個關鍵字會先比對到那一欄（因為是包含比對、且排在「題目」之前），導致「題項名稱」誤配到 Kano 正向題欄位，而不是真正放題目文字的那一欄。
+
+修法（`guessMapping()`，滿意度分析互動儀表板_進階版.html 855 行附近）：改成兩階段比對——先找**完全相符**的欄名（例如欄名剛好就是「題目」），找不到才退回原本的「包含比對」；`item` 關鍵字順序也調整為 `["題目","題項","服務項目","構面","項目","功能"]`，把最精準的字放最前面、最容易誤判的generic字（「項目」「功能」）放最後當保底。這個 `guessMapping()` 是 IPA／Kano 共用同一份邏輯（欄位對應表單同時列出 importance/performance 與 kanoFunc/kanoDys），改一次兩邊都生效，不需要分別處理。已用 Node 腳本模擬「題目＋功能性問題＋非功能性問題」同時出現的欄位組合驗證修正後 `item` 正確對應到「題目」欄。
+
 ## 開發／建置
 
 一般用法是透過已安裝的技能對話產生交付物。若要客製化儀表板，須在解包後的 skill 內編輯 `scripts/dashboard-src/`，再合併成單一 HTML：
