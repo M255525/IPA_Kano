@@ -740,6 +740,27 @@ function downloadChartPNG(chart, filename) {
 function normHeader(h) {
   return String(h ?? "").trim().replace(/（/g, "(").replace(/）/g, ")").replace(/，/g, ",");
 }
+const IPA_IMP_SUFFIX = ["重要度","重要性"];
+const IPA_PERF_SUFFIX = ["滿意度","表現度","滿意","表現"];
+function stripHeaderSuffix(t, suffixList) {
+  const sorted = [...suffixList].sort((a,b)=>b.length-a.length);
+  for (const suf of sorted) {
+    const paren = new RegExp("\\(\\s*" + suf + "\\s*\\)$");
+    if (paren.test(t)) return t.replace(paren, "").trim();
+  }
+  for (const suf of sorted) {
+    if (t.endsWith(suf) && t.length > suf.length) return t.slice(0, -suf.length).trim();
+  }
+  return null;
+}
+function classifyIPAHeaderSuffix(h) {
+  const t = normHeader(h);
+  const impCore = stripHeaderSuffix(t, IPA_IMP_SUFFIX);
+  if (impCore !== null) return { polarity:"imp", core:impCore };
+  const perfCore = stripHeaderSuffix(t, IPA_PERF_SUFFIX);
+  if (perfCore !== null) return { polarity:"perf", core:perfCore };
+  return null;
+}
 function detectWideFormat(headers) {
   const groups = {};
   headers.forEach((h, idx) => {
@@ -749,8 +770,26 @@ function detectWideFormat(headers) {
     groups[key].push(idx);
   });
   const pairs = [];
+  const used = new Set();
   for (const key of Object.keys(groups)) {
-    if (groups[key].length === 2) pairs.push({ item:key, impIdx:groups[key][0], perfIdx:groups[key][1] });
+    if (groups[key].length === 2) {
+      pairs.push({ item:key, impIdx:groups[key][0], perfIdx:groups[key][1] });
+      groups[key].forEach(i => used.add(i));
+    }
+  }
+  // 欄名不完全相同，但各自帶「（重要度）」／「（滿意度）」這類尾綴可拆出相同題目核心文字（常見於問卷平台匯出格式）
+  const impMap = {}, perfMap = {};
+  headers.forEach((h, idx) => {
+    if (used.has(idx)) return;
+    const key = normHeader(h);
+    if (!key) return;
+    const c = classifyIPAHeaderSuffix(key);
+    if (!c || !c.core) return;
+    if (c.polarity === "imp" && !(c.core in impMap)) impMap[c.core] = idx;
+    if (c.polarity === "perf" && !(c.core in perfMap)) perfMap[c.core] = idx;
+  });
+  for (const core of Object.keys(impMap)) {
+    if (perfMap.hasOwnProperty(core)) pairs.push({ item:core, impIdx:impMap[core], perfIdx:perfMap[core] });
   }
   return pairs;
 }
