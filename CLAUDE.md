@@ -139,7 +139,7 @@ python scripts/build_dashboard.py scripts/dashboard-src 輸出檔名.html
 
 `滿意度分析互動儀表板_進階版.html` 加了兩個彼此獨立的模組（做法比照 `ai-image-prompt-studio/index.html`）：
 
-- **跑馬燈**：`#marqueeBar` 內容抓自工作區既有的共用公告 Google Sheet（與 `Prompt`／`ai-prompt-generator`／`ai-image-prompt-studio`／`ai-video-studio` 系列共用同一個端點），`localStorage` key `ipaKanoMarquee`，每 20 分鐘背景重抓一次。改內容直接編輯共用 Sheet，不需重新部署。
+- **跑馬燈**：`#marqueeBar` 內容抓自工作區既有的共用公告 Google Sheet（與 `Prompt`／`ai-prompt-generator`／`ai-image-prompt-studio`／`ai-video-studio` 系列共用同一個端點），`localStorage` key `ipaKanoMarquee`，每 20 分鐘背景重抓一次。改內容直接編輯共用 Sheet，不需重新部署。**2026-08-20 更新**：`render()` 新增 `lastKey`（`JSON.stringify(items)`）比對，內容沒變就不重繪，CSS animation 不再被重置歸零重跑；新增 `appendParsedText()`／`buildTrackContent()` 支援 `[文字](https://...)` 連結語法（`createTextNode` 組 DOM，避免 XSS），資料格式仍是純字串陣列，向下相容，`Code.gs` 未改動。已 commit＋push（GitHub Pages 自動重新部署）；`dashboard-exe/IPAKanoDashboard.exe` 桌面版尚未為此重建。
 - **序號授權**：`#licenseGate` 全螢幕遮罩，預設鎖定**整個工具**，通過驗證才顯示 `.hidden`；載入時對後端即時重驗（不只信任 localStorage 快取），背景每 20 分鐘重驗一次。`localStorage` key：`ipaKanoSerial`。12 個月使用期限。
   - `Code.gs`（本資料夾）——GAS 後端骨架，`VALID_AMOUNT = 12`，欄位「序號／開始日期／結束日期」。**這不是本資料夾在跑的檔案**，是貼到下面那個 Sheet 的「擴充功能 → Apps Script」編輯器裡部署成 Web App 的原始碼備份。
   - 綁定 Sheet（**IPA_Kano 專用新開，不與其他工具共用**）：<https://docs.google.com/spreadsheets/d/1VCBT78MeDm2nC1ftQGdBGrkA2lYsC6lqqjWxsYpfKqA/edit>，欄位「任務／優先順序／負責人／狀態／序號／開始日期／結束日期／交件／附註」，已有測試序號 `mark0131`（2026/8/13～2027/12/31）。
